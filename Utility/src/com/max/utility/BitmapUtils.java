@@ -1,8 +1,13 @@
 package com.max.utility;
 
+import java.lang.ref.WeakReference;
+
+import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.AsyncTask;
+import android.widget.ImageView;
 
 
 public class BitmapUtils {
@@ -65,4 +70,34 @@ public class BitmapUtils {
 	    return BitmapFactory.decodeByteArray(data, 0, data.length, options);
 	}
 
+	class BitmapWorkerTask extends AsyncTask<Integer, Void, Bitmap> {
+	    private final WeakReference<ImageView> imageViewReference;
+	    private int data = 0;
+	    private Context mContext;
+	    public BitmapWorkerTask(ImageView imageView) {
+	        // Use a WeakReference to ensure the ImageView can be garbage collected
+	        imageViewReference = new WeakReference<ImageView>(imageView);
+	        mContext = imageView.getContext();
+	    }
+
+	    // Decode image in background.
+	    @Override
+	    protected Bitmap doInBackground(Integer... params) {
+	        data = params[0];
+	        if ( mContext != null ) {
+	        	return decodeSampledBitmapFromResource(mContext.getResources(), data, 100, 100);
+	        } else return null;
+	    }
+
+	    // Once complete, see if ImageView is still around and set bitmap.
+	    @Override
+	    protected void onPostExecute(Bitmap bitmap) {
+	        if (imageViewReference != null && bitmap != null) {
+	            final ImageView imageView = imageViewReference.get();
+	            if (imageView != null) {
+	                imageView.setImageBitmap(bitmap);
+	            }
+	        }
+	    }
+	}
 }
